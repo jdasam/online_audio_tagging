@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div id='main_container'>
+<canvas id="canvas" style="border:1px solid #00000000;">
+</canvas>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+
+<script>
+  c = document.getElementById("canvas");
+  ctx = c.getContext("2d");    
+
+  var width = window.innerWidth;
+  var height = window.innerHeight
+  c.width = window.innerWidth
+  c.height = window.innerHeight
+  var pitch_height = height/88;
+  var height_margin = pitch_height/6;
+  var max_length = window.innerWidth
+
+  var vocabs = [];
+  var probs = [];
+  var momentum_probs = [];
+
+  $.getJSON("_vocab",
+    function(data) {
+        vocabs = data.vocab
+        momentum_probs = new Array(vocabs.length).fill(0);
+        console.log('vocabs', data.vocab)
+      });
+
+  setInterval(function(){ 
+    $.getJSON("_tag",
+    function(data) {
+      console.log(data)
+      for (i = 0; i <data.prob.length; i++) {
+        probs.push(data.prob[i])
+      }
+      });  
+   }, 250);
+  
+
+  function draw(){
+    if (probs.length != 0){
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      for (j=0; j<probs.length; j++){
+        for (i = 0; i <momentum_probs.length; i++) {
+            momentum_probs[i] = momentum_probs[i]*0.85 + probs[j][i]*0.15;
+          }
+        }
+      probs = [];
+    }
+    
+    for (i = 0; i <vocabs.length; i++) {
+        tag = vocabs[i];
+        prob = momentum_probs[i];
+        font_size = Math.round(prob**4*200);
+        ctx.font = `${font_size}px serif`;
+        if (i<33){
+          ctx.fillText(`${tag}`, 100, 100+i*20);
+        }
+        else if(i<66){
+          ctx.fillText(`${tag}`, 500, 100+(i-33)*20);
+        }
+        else{
+          ctx.fillText(`${tag}`, 900, 100+(i-66)*20);
+        }
+      }
+
+    requestAnimationFrame(draw)
+  }
+  
+  requestAnimationFrame(draw)
+  
+  
+</script>
+
+{% endblock %}
